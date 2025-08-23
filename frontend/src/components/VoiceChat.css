@@ -1,0 +1,339 @@
+.voice-chat-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.voice-chat-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.brand-icon {
+  color: #667eea;
+  width: 32px;
+  height: 32px;
+}
+
+.brand h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #718096;
+  font-weight: 500;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status.connected {
+  background: rgba(72, 187, 120, 0.1);
+  color: #38a169;
+}
+
+.status.disconnected {
+  background: rgba(245, 101, 101, 0.1);
+  color: #e53e3e;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Main Interface */
+.main-interface {
+  margin-bottom: 30px;
+}
+
+.audio-visualizer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.pulse-ring {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.pulse-ring.recording {
+  animation: recordingPulse 1.5s ease-in-out infinite;
+  background: linear-gradient(135deg, #fc8181, #f56565);
+}
+
+.pulse-ring.speaking {
+  animation: speakingPulse 1s ease-in-out infinite;
+  background: linear-gradient(135deg, #48bb78, #38a169);
+}
+
+.pulse-ring-inner {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+@keyframes recordingPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(252, 129, 129, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 20px rgba(252, 129, 129, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(252, 129, 129, 0);
+  }
+}
+
+@keyframes speakingPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.7);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 15px rgba(72, 187, 120, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(72, 187, 120, 0);
+  }
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.mic-button,
+.power-button {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0;
+  position: relative;
+}
+
+.mic-button {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.mic-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.mic-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mic-button.recording {
+  background: linear-gradient(135deg, #fc8181, #f56565);
+  animation: recordingButton 0.8s ease-in-out infinite;
+}
+
+@keyframes recordingButton {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.power-button.connected {
+  background: linear-gradient(135deg, #48bb78, #38a169);
+  color: white;
+}
+
+.power-button.disconnected {
+  background: linear-gradient(135deg, #cbd5e0, #a0aec0);
+  color: #4a5568;
+}
+
+.power-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.power-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Status Messages */
+.error-message {
+  background: rgba(245, 101, 101, 0.1);
+  color: #e53e3e;
+  padding: 12px 20px;
+  border-radius: 12px;
+  margin: 20px 0;
+  border: 1px solid rgba(245, 101, 101, 0.2);
+}
+
+.session-info {
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  padding: 8px 16px;
+  border-radius: 8px;
+  margin: 10px 0;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+/* Instructions */
+.instructions {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.instructions p {
+  margin: 8px 0;
+  color: #718096;
+  font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .voice-chat-card {
+    padding: 30px 20px;
+    margin: 20px;
+    border-radius: 20px;
+  }
+
+  .header {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+
+  .brand h1 {
+    font-size: 24px;
+  }
+
+  .pulse-ring {
+    width: 100px;
+    height: 100px;
+  }
+
+  .pulse-ring-inner {
+    width: 70px;
+    height: 70px;
+  }
+
+  .mic-button,
+  .power-button {
+    width: 55px;
+    height: 55px;
+  }
+
+  .controls {
+    gap: 15px;
+  }
+}
+
+@media (max-width: 400px) {
+  .voice-chat-container {
+    padding: 10px;
+  }
+
+  .voice-chat-card {
+    padding: 25px 15px;
+  }
+
+  .pulse-ring {
+    width: 90px;
+    height: 90px;
+  }
+
+  .pulse-ring-inner {
+    width: 60px;
+    height: 60px;
+  }
+
+  .mic-button,
+  .power-button {
+    width: 50px;
+    height: 50px;
+  }
+}
