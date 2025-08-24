@@ -78,3 +78,7 @@ temp/
 # Package lock files (comment out if you want to keep them)
 # package-lock.json
 # yarn.lock
+.vercel
+
+# Local Netlify folder
+.netlify

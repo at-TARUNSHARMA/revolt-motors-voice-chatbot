@@ -1,12 +1,10 @@
 {
   "version": 2,
-  "name": "revolt-motors-voice-chatbot",
-  "builds": [
-    {
-      "src": "start.js",
-      "use": "@vercel/node"
+  "functions": {
+    "backend/server-live.js": {
+      "maxDuration": 300
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/(.*)",
@@ -17,22 +15,8 @@
       "dest": "/backend/server-live.js"
     },
     {
-      "src": "/ws",
-      "dest": "/backend/server-live.js"
-    },
-    {
       "src": "/(.*)",
       "dest": "/frontend/build/$1"
     }
-  ],
-  "env": {
-    "GEMINI_API_KEY": "@gemini-api-key",
-    "GEMINI_MODEL": "gemini-2.0-flash-live-001",
-    "NODE_ENV": "production"
-  },
-  "functions": {
-    "backend/server-live.js": {
-      "maxDuration": 300
-    }
-  }
+  ]
 }
