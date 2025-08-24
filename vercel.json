@@ -3,15 +3,8 @@
   "name": "revolt-motors-voice-chatbot",
   "builds": [
     {
-      "src": "backend/server-live.js",
+      "src": "start.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
     }
   ],
   "routes": [

@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: revolt-motors-chatbot
+    env: node
+    plan: free
+    buildCommand: npm run install-all && cd frontend && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_MODEL  
+        value: gemini-2.0-flash-live-001
+      - key: CLIENT_URL
+        fromService:
+          type: web
+          name: revolt-motors-chatbot
+          property: host
+      - key: GEMINI_API_KEY
+        sync: false # This needs to be set manually in Render dashboard
