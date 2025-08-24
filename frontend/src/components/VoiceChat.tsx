@@ -151,42 +151,31 @@ const VoiceChat: React.FC<VoiceChatProps> = () => {
   }, []);
 
   // WebSocket message handler
+  // WebSocket message handler
   const handleWebSocketMessage = useCallback((event: MessageEvent) => {
     try {
       const data: WebSocketMessage = JSON.parse(event.data);
-      
       switch (data.type) {
         case 'session_started':
           setSessionId(data.sessionId || null);
           setConnectionStatus('Connected');
-          setError(null);
           break;
-          
         case 'audio_response':
-          if (data.audio) {
-            playAudioResponse(data.audio);
-          }
+          if (data.audio) playAudioResponse(data.audio);
           break;
-          
         case 'speech_response':
-          if (data.text) {
-            speakText(data.text);
-          }
+          if (data.text) speakText(data.text);
           break;
-          
         case 'turn_complete':
           setIsSpeaking(false);
           break;
-          
         case 'session_ended':
           setConnectionStatus('Session ended');
           break;
-          
         case 'error':
           setError(data.message || 'Unknown error occurred');
           setConnectionStatus('Error');
           break;
-          
         default:
           console.log('Unknown message type:', data.type);
       }
@@ -196,45 +185,40 @@ const VoiceChat: React.FC<VoiceChatProps> = () => {
   }, [playAudioResponse, speakText]);
 
   // Connect to WebSocket
-  const connectWebSocket = useCallback(async () => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      return;
-    }
+  const connectWebSocket = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
     try {
       setConnectionStatus('Connecting...');
       setError(null);
 
-      const ws = new WebSocket('ws://localhost:8080');
-      
+      const wsUrl =
+        process.env.NODE_ENV === 'production'
+          ? 'wss://revolt-motors-voice-chatbot.onrender.com'
+          : 'ws://localhost:8080';
+
+      const ws = new WebSocket(wsUrl);
+
       ws.onopen = () => {
         console.log('WebSocket connected');
         setIsConnected(true);
         setConnectionStatus('Connected');
-        
-        // Start session
         ws.send(JSON.stringify({ type: 'start_session' }));
       };
-      
+
       ws.onmessage = handleWebSocketMessage;
-      
-      ws.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.reason);
+      ws.onclose = () => {
         setIsConnected(false);
         setConnectionStatus('Disconnected');
         setSessionId(null);
       };
-      
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+      ws.onerror = () => {
         setError('Connection error');
         setConnectionStatus('Connection Error');
       };
-      
+
       wsRef.current = ws;
-      
     } catch (error) {
-      console.error('Failed to connect WebSocket:', error);
       setError('Failed to connect to server');
       setConnectionStatus('Connection Failed');
     }
