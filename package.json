@@ -4,14 +4,30 @@
   "description": "Real-time conversational voice interface using Gemini Live API for Revolt Motors",
   "scripts": {
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "start": "concurrently \"npm run backend:start\" \"npm run frontend:start\"",
     "backend": "cd backend && npm run dev",
+    "backend:start": "cd backend && npm run start",
     "frontend": "cd frontend && npm start",
-    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+    "frontend:start": "cd frontend && npm run build && serve -s build -l 3000",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "test": "node test-setup.js",
+    "test-api": "curl -X POST http://localhost:8080/api/test-message -H \"Content-Type: application/json\" -d \"{\\\"message\\\":\\\"Hello, tell me about Revolt Motors\\\"}\"",
+    "health": "curl http://localhost:8080/health",
+    "setup": "powershell -ExecutionPolicy Bypass -File setup.ps1"
   },
-  "keywords": ["voice", "chatbot", "gemini", "revolt", "real-time"],
+  "keywords": [
+    "voice",
+    "chatbot",
+    "gemini",
+    "revolt",
+    "real-time"
+  ],
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.1"
   }
 }

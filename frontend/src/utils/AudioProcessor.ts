@@ -163,7 +163,7 @@ export default class AudioProcessor {
   static isSupported(): boolean {
     return !!(
       navigator.mediaDevices &&
-      navigator.mediaDevices.getUserMedia &&
+      typeof navigator.mediaDevices.getUserMedia === 'function' &&
       (window.AudioContext || (window as any).webkitAudioContext)
     );
   }

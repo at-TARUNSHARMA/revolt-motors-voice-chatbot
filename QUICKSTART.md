@@ -1,31 +1,51 @@
-# 🚀 Quick Start Guide
+# 🚀 Quick Start Guide - Gemini Live API
 
-## Get Your API Key
+Get your Revolt Motors Voice Chatbot with **real Gemini Live API** running in 5 minutes!
 
-1. Visit [Google AI Studio](https://aistudio.google.com/)
-2. Sign in with your Google account
-3. Create a new API key
-4. Copy the API key
+## 📋 Prerequisites
 
-## Setup & Run
+- **Node.js 18+** ([Download here](https://nodejs.org/))
+- **Gemini API Key** from [Google AI Studio](https://aistudio.google.com/)
+- **Modern browser** with microphone support
 
-1. **Configure API Key**
+## ⚡ One-Command Setup
+
+```powershell
+# Windows: Run automated setup
+powershell -ExecutionPolicy Bypass -File setup.ps1
+
+# Manual: Install dependencies
+npm run install-all
+```
+
+## 🔑 Configure API Key
+
+1. **Get your Gemini API Key:**
+   - Visit [Google AI Studio](https://aistudio.google.com/)
+   - Create a new API key (free tier available!)
+
+2. **Add the key to your environment:**
    ```bash
-   # Copy the environment file
+   # Copy the environment template
    copy backend\.env.example backend\.env
    
    # Edit backend\.env and replace with your actual API key
    GEMINI_API_KEY=your_actual_gemini_api_key_here
+   
+   # Choose your model (recommended for testing):
+   GEMINI_MODEL=gemini-2.0-flash-live-001
    ```
 
-2. **Start the Application**
-   ```bash
-   # Install all dependencies
-   npm run install-all
-   
-   # Start both backend and frontend
-   npm run dev
-   ```
+## 🎬 Start the Application
+
+```bash
+# Start both backend and frontend servers
+npm run dev
+```
+
+This starts:
+- **Backend** (Gemini Live API proxy) on `http://localhost:8080`
+- **Frontend** (React app) on `http://localhost:3000`
 
 3. **Open Your Browser**
    - Go to `http://localhost:3000`

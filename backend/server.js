@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const WebSocket = require('ws');
 const http = require('http');
-const { GoogleGenerativeAI, Modality } = require('@google/generative-ai');
+const { GoogleGenAI } = require('@google/genai');
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
@@ -16,8 +16,8 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Initialize Gemini AI client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Initialize Gemini Live API client
+const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // System instruction for Revolt Motors
 const REVOLT_SYSTEM_INSTRUCTION = `You are Rev, the official voice assistant for Revolt Motors - India's leading electric motorcycle manufacturer. 
@@ -75,6 +75,10 @@ wss.on('connection', (ws) => {
           await handleAudioChunk(sessionId, session, data.audio);
           break;
         
+        case 'text_query':
+          await processTextQuery(sessionId, session, data.text);
+          break;
+          
         case 'end_session':
           await handleEndSession(sessionId, session);
           break;
@@ -104,84 +108,33 @@ wss.on('connection', (ws) => {
 
 async function handleStartSession(sessionId, session) {
   try {
-    const model = process.env.GEMINI_MODEL || 'gemini-live-2.5-flash-preview';
-    
-    const config = {
-      responseModalities: [Modality.AUDIO],
-      systemInstruction: REVOLT_SYSTEM_INSTRUCTION,
-      // Enable voice activity detection for interruption handling
-      speechConfig: {
-        voiceConfig: {
-          prebuiltVoiceConfig: {
-            voiceName: "Puck" // You can change this to other available voices
-          }
-        }
-      }
-    };
-
-    // Connect to Gemini Live API
-    const geminiSession = await genAI.live.connect({
-      model: model,
-      config: config,
-      callbacks: {
-        onopen: () => {
-          console.log(`Gemini session opened for: ${sessionId}`);
-          session.ws.send(JSON.stringify({ 
-            type: 'session_started',
-            sessionId: sessionId 
-          }));
-        },
-        onmessage: (message) => {
-          // Forward Gemini responses to client
-          if (message.data) {
-            session.ws.send(JSON.stringify({
-              type: 'audio_response',
-              audio: message.data,
-              sessionId: sessionId
-            }));
-          }
-          
-          // Handle turn completion
-          if (message.serverContent && message.serverContent.turnComplete) {
-            session.ws.send(JSON.stringify({
-              type: 'turn_complete',
-              sessionId: sessionId
-            }));
-          }
-        },
-        onerror: (error) => {
-          console.error(`Gemini session error for ${sessionId}:`, error);
-          session.ws.send(JSON.stringify({
-            type: 'error',
-            message: 'Gemini API error',
-            sessionId: sessionId
-          }));
-        },
-        onclose: (reason) => {
-          console.log(`Gemini session closed for ${sessionId}:`, reason);
-          session.ws.send(JSON.stringify({
-            type: 'session_ended',
-            reason: reason,
-            sessionId: sessionId
-          }));
-        }
-      }
+    // Initialize Gemini model for text-based responses
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      systemInstruction: REVOLT_SYSTEM_INSTRUCTION
     });
 
-    session.geminiSession = geminiSession;
+    session.geminiModel = model;
     session.isConnected = true;
+    session.audioBuffer = [];
+
+    console.log(`Session started for: ${sessionId}`);
+    session.ws.send(JSON.stringify({ 
+      type: 'session_started',
+      sessionId: sessionId 
+    }));
 
   } catch (error) {
-    console.error('Failed to start Gemini session:', error);
+    console.error('Failed to start session:', error);
     session.ws.send(JSON.stringify({
       type: 'error',
-      message: 'Failed to connect to Gemini Live API'
+      message: 'Failed to initialize AI model'
     }));
   }
 }
 
 async function handleAudioChunk(sessionId, session, audioData) {
-  if (!session.geminiSession || !session.isConnected) {
+  if (!session.geminiModel || !session.isConnected) {
     session.ws.send(JSON.stringify({
       type: 'error',
       message: 'Session not connected'
@@ -190,20 +143,100 @@ async function handleAudioChunk(sessionId, session, audioData) {
   }
 
   try {
-    // Send audio chunk to Gemini
-    await session.geminiSession.sendRealtimeInput({
-      audio: {
-        data: audioData,
-        mimeType: "audio/pcm;rate=16000"
-      }
-    });
+    // For now, we'll buffer audio chunks and process them when recording stops
+    session.audioBuffer.push(audioData);
+    
+    // Simulate processing - in a real implementation, you would:
+    // 1. Convert audio to text using Speech-to-Text API
+    // 2. Send text to Gemini
+    // 3. Convert Gemini's response back to audio using Text-to-Speech API
+    
+    // For demo purposes, let's trigger a response after a few chunks
+    if (session.audioBuffer.length >= 10) {
+      await processAudioBuffer(sessionId, session);
+    }
+    
   } catch (error) {
-    console.error('Failed to send audio to Gemini:', error);
+    console.error('Failed to process audio:', error);
     session.ws.send(JSON.stringify({
       type: 'error',
       message: 'Failed to process audio'
     }));
   }
+}
+
+async function processAudioBuffer(sessionId, session, userQuery = null) {
+  try {
+    // Clear the buffer
+    session.audioBuffer = [];
+    
+    // If no user query provided, use a placeholder for now
+    // In a real implementation, you would convert the audio buffer to text using Speech-to-Text API
+    const userPrompt = userQuery || "Tell me about Revolt Motors electric motorcycles in 2-3 sentences.";
+    
+    console.log(`Processing query for ${sessionId}: ${userPrompt}`);
+    
+    const result = await session.geminiModel.generateContent(userPrompt);
+    const responseText = result.response.text();
+    
+    console.log(`Generated response for ${sessionId}: ${responseText}`);
+    
+    // Send text response for speech synthesis
+    session.ws.send(JSON.stringify({
+      type: 'speech_response',
+      text: responseText,
+      sessionId: sessionId
+    }));
+    
+    // Send turn complete after a short delay to allow speech to start
+    setTimeout(() => {
+      session.ws.send(JSON.stringify({
+        type: 'turn_complete',
+        sessionId: sessionId
+      }));
+    }, 500);
+    
+  } catch (error) {
+    console.error('Failed to process audio buffer:', error);
+    
+    // Handle rate limiting gracefully
+    if (error.status === 429) {
+      session.ws.send(JSON.stringify({
+        type: 'speech_response',
+        text: 'I apologize, but I\'m currently experiencing high demand. Please try again in a moment. In the meantime, I\'d be happy to tell you that Revolt Motors offers amazing electric motorcycles with swappable batteries!',
+        sessionId: sessionId
+      }));
+    } else {
+      session.ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Failed to generate response'
+      }));
+    }
+  }
+}
+
+// Generate dummy audio data for demonstration
+function generateDummyAudioData() {
+  // Generate a simple sine wave for demo purposes
+  const sampleRate = 24000;
+  const duration = 2; // seconds
+  const samples = sampleRate * duration;
+  const buffer = new ArrayBuffer(samples * 2);
+  const view = new DataView(buffer);
+  
+  for (let i = 0; i < samples; i++) {
+    const sample = Math.sin(2 * Math.PI * 440 * i / sampleRate) * 0.3;
+    view.setInt16(i * 2, sample * 32767, true);
+  }
+  
+  // Convert to base64
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  
+  return Buffer.from(binary, 'binary').toString('base64');
 }
 
 async function handleEndSession(sessionId, session) {

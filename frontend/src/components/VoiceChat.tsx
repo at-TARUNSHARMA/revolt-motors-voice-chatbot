@@ -8,6 +8,7 @@ interface VoiceChatProps {}
 interface WebSocketMessage {
   type: string;
   audio?: string;
+  text?: string;
   sessionId?: string;
   message?: string;
   reason?: string;
@@ -26,8 +27,9 @@ const VoiceChat: React.FC<VoiceChatProps> = () => {
   const wsRef = useRef<WebSocket | null>(null);
   const audioProcessorRef = useRef<AudioProcessor | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const audioQueueRef = useRef<ArrayBuffer[]>([]);
+  const audioBufferRef = useRef<string[]>([]);
   const isPlayingRef = useRef<boolean>(false);
+  const currentAudioSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   // Initialize audio context
   const initializeAudioContext = useCallback(async () => {
@@ -48,22 +50,28 @@ const VoiceChat: React.FC<VoiceChatProps> = () => {
     }
   }, []);
 
-  // Play audio response from Gemini
+  // Play audio response from Gemini Live API
   const playAudioResponse = useCallback(async (audioData: string) => {
+    // Stop any currently playing audio first
+    if (currentAudioSourceRef.current) {
+      currentAudioSourceRef.current.stop();
+      currentAudioSourceRef.current = null;
+    }
+    
     const audioContext = await initializeAudioContext();
     if (!audioContext) return;
 
     try {
       setIsSpeaking(true);
       
-      // Decode base64 audio data
+      // Decode base64 audio data from Gemini Live API
       const binaryString = atob(audioData);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      // Convert PCM data to audio buffer (24kHz, 16-bit)
+      // Convert PCM data to audio buffer (24kHz, 16-bit for Gemini Live API output)
       const audioBuffer = audioContext.createBuffer(1, bytes.length / 2, 24000);
       const channelData = audioBuffer.getChannelData(0);
       
@@ -77,17 +85,70 @@ const VoiceChat: React.FC<VoiceChatProps> = () => {
       source.buffer = audioBuffer;
       source.connect(audioContext.destination);
       
+      // Store reference to current audio source for interruption
+      currentAudioSourceRef.current = source;
+      
       source.onended = () => {
         setIsSpeaking(false);
+        currentAudioSourceRef.current = null;
       };
       
       source.start();
+      console.log('🔊 Playing Gemini Live audio response');
       
     } catch (error) {
-      console.error('Error playing audio:', error);
+      console.error('❌ Error playing Gemini Live audio:', error);
       setIsSpeaking(false);
+      currentAudioSourceRef.current = null;
     }
   }, [initializeAudioContext]);
+
+  // Speech synthesis for text responses
+  const speakText = useCallback((text: string) => {
+    if (!window.speechSynthesis) {
+      console.error('Speech synthesis not supported');
+      return;
+    }
+
+    // Stop any ongoing speech
+    window.speechSynthesis.cancel();
+
+    setIsSpeaking(true);
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Configure voice settings
+    utterance.rate = 0.9; // Slightly slower for clarity
+    utterance.pitch = 1.0;
+    utterance.volume = 0.8;
+    
+    // Try to find a good voice (prefer female voices for friendliness)
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(voice => 
+      voice.lang.startsWith('en') && 
+      (voice.name.includes('Female') || voice.name.includes('Samantha') || voice.name.includes('Karen'))
+    ) || voices.find(voice => voice.lang.startsWith('en')) || voices[0];
+    
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.onstart = () => {
+      console.log('Speech started');
+    };
+
+    utterance.onend = () => {
+      console.log('Speech ended');
+      setIsSpeaking(false);
+    };
+
+    utterance.onerror = (event) => {
+      console.error('Speech error:', event.error);
+      setIsSpeaking(false);
+    };
+
+    window.speechSynthesis.speak(utterance);
+  }, []);
 
   // WebSocket message handler
   const handleWebSocketMessage = useCallback((event: MessageEvent) => {
@@ -104,6 +165,12 @@ const VoiceChat: React.FC<VoiceChatProps> = () => {
         case 'audio_response':
           if (data.audio) {
             playAudioResponse(data.audio);
+          }
+          break;
+          
+        case 'speech_response':
+          if (data.text) {
+            speakText(data.text);
           }
           break;
           
@@ -126,7 +193,7 @@ const VoiceChat: React.FC<VoiceChatProps> = () => {
     } catch (error) {
       console.error('Error parsing WebSocket message:', error);
     }
-  }, [playAudioResponse]);
+  }, [playAudioResponse, speakText]);
 
   // Connect to WebSocket
   const connectWebSocket = useCallback(async () => {
@@ -204,9 +271,22 @@ const VoiceChat: React.FC<VoiceChatProps> = () => {
       
       // Stop any current playback when user starts speaking (interruption handling)
       if (isSpeaking) {
+        console.log('🛑 Interrupting AI response');
         setIsSpeaking(false);
-        if (audioContextRef.current) {
-          // This will stop current audio playback
+        
+        // Stop speech synthesis
+        if (window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
+        
+        // Stop current audio source
+        if (currentAudioSourceRef.current) {
+          currentAudioSourceRef.current.stop();
+          currentAudioSourceRef.current = null;
+        }
+        
+        // Suspend and resume audio context to clear any ongoing audio
+        if (audioContextRef.current && audioContextRef.current.state === 'running') {
           audioContextRef.current.suspend().then(() => {
             audioContextRef.current?.resume();
           });
@@ -323,3 +403,6 @@ const VoiceChat: React.FC<VoiceChatProps> = () => {
       </div>
     </div>
   );
+};
+
+export default VoiceChat;
