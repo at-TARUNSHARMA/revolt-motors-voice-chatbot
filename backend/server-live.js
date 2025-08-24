@@ -315,6 +315,16 @@ async function handleEndSession(sessionId, session) {
   }
 }
 
+app.get('/', (req, res) => {
+  res.send('🚀 Revolt Motors Voice Chatbot backend is running!');
+});
+
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../frontend/build')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
