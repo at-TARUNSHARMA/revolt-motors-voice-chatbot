@@ -1,0 +1,19 @@
+{
+  "deploy": {
+    "startCommand": "npm run start",
+    "healthcheckPath": "/health"
+  },
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "npm run install-all && cd frontend && npm run build"
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "NODE_ENV": "production",
+        "GEMINI_MODEL": "gemini-2.0-flash-live-001",
+        "CLIENT_URL": "${{RAILWAY_STATIC_URL}}"
+      }
+    }
+  }
+}
